@@ -1,0 +1,835 @@
+%$ NAFN=deltanull-poissondirichlet-varyingN
+%$ notangle -L -R$NAFN.c $NAFN.nw > $NAFN.c
+%$ g++ -std=c++26 -m64 -march=native -O3 -x c++ $NAFN.c -lm -lgsl -lgslcblas
+%$ noweave -latex -autodefs c -index -delay $NAFN.nw > $NAFN.tex
+%$ echo '\\end{document}' >> $NAFN.tex
+%$ emacs --version | head -n1 > innleggemacs
+%$ uname  --kernel-release -o  > innleggop
+%$ g++ --version | head -n1 > innleggcpp
+%$ uname  --kernel-release -o  > innleggop
+%$ bash --version | head -n1 > innleggbash
+%$ sed -i 's/x86/x86\\/g' innleggbash
+%$ gsl-config --version > innlegggsl
+%$ spix --version > innleggspix
+%$ awk --version | head -n1 > innleggawk
+%$ sed --version | head -n1 > innleggsed
+%$ latex --version | head -n1 > innlegglatex
+%$ latex $NAFN
+%$ bibtex $NAFN
+%$ latex $NAFN
+\documentclass[a4paper,10pt,final]{article}
+\usepackage{fancyvrb,graphicx,url}
+\usepackage{noweb}
+%\usepackage{fontspec}
+%\usepackage{xltxtra}
+%\usepackage{lineno}
+\usepackage{amsfonts, amsmath, amssymb}
+\usepackage{fullpage}
+\usepackage{marvosym}
+\usepackage{bm}
+\usepackage{bbm}
+\usepackage[numbers]{natbib}
+\usepackage{doi}
+\usepackage{dsfont}
+\usepackage{abstract}
+\renewcommand{\abstractname}{}
+\usepackage[svgnames]{xcolor}
+\usepackage[]{hyperref}
+\hypersetup{
+    colorlinks,
+    linkcolor={gray!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+\usepackage{orcidlink}
+\usepackage[en-GB,showdow]{datetime2}
+\DTMlangsetup[en-GB]{ord=raise,monthyearsep={,\space}}
+\newcommand{\EE}[1]{\ensuremath{\mathds{E}\left[ #1 \right]}}
+\newcommand{\svigi}[1]{\ensuremath{\left( #1 \right)}}
+\newcommand{\mengi}[1]{\ensuremath{\left\{ #1 \right\}}}
+\newcommand{\one}[1]{\ensuremath{\mathds 1 _{ \mengi{#1}  }}}
+\newcommand{\prb}[1]{\ensuremath{\mathds P\left( #1 \right)}}
+\title{\flushleft \small \textsf{\textbf {Gene genealogies in haploid populations evolving according to
+sweepstakes reproduction -- \\ approximating $\EE{R_{i}(n)}$ for the (time-changed) $\delta_{0}$-Poisson-Dirichlet$(\alpha,0)$-coalescent}}}
+\author{\sc {\small bjarki eldon\orcidlink{0000-0001-9354-2391}\footnote{\href{beldon11@gmail.com}{beldon11@gmail.com} \\ compiled {\DTMcurrenttime} on  {\today} }}}
+\date{}
+\begin{document}
+
+@ 
+
+\maketitle
+%%\renewcommand{\abstractname}{\vspace{-\baselineskip}}
+\vspace{-\baselineskip}
+\vspace{-\baselineskip}
+
+\begin{abstract}
+Fix $0 < \alpha < 1$.  Let
+$\{\xi^{n}\} \equiv \{ \xi^{n}(t) : t \ge 0 \}$ be the continuous-time
+time-changed $\delta_{0}$-Poisson-Dirichlet$(\alpha,0)$-coalescent
+with time-change function $G(t) = \int_{0}^{t} v(s){\rm d}s$ where
+$v(t) \equiv \lim_{N\to\infty}N_{\lfloor t/c_{N} \rfloor }/N$ and
+$N_{r}$ is the population size $r$ generations ago (into the past).
+Write $\# A$ for the number of elements in a given finite set $A$,
+$L_{i}(n) \equiv \int_{0}^{\tau(n) } \# \left\{ \xi \in \xi^{n}(t) :
+\#\xi = i \right\}{\rm d}t $ and
+$L(n) \equiv \int_{0}^{\tau(n)} \# \xi^{n}(t){\rm d}t $ and
+$\tau(n) \equiv \inf \left\{ t \ge 0 : \# \xi^{n}(t) = 1 \right\} $;
+then 
+$L(n) = L_{1}(n) + \cdots + L_{n-1}(n)$. Define
+$R_{i}(n) \equiv L_{i}(n)/\sum_{j}L_{j}(n) $ for $i=1,2,\ldots, n-1$.
+Interpreting $\{\xi^{n}\}$ as `trees' we may view $L_{i}(n)$ as the
+random total length of branches supporting
+$i$ leaves, with the length measured in
+coalescent time units, and $n$ sample size.  With this C++ code we
+sample the time-changed
+$\delta_{0}$-Poisson-Dirichlet$(\alpha,0)$-coalescent with
+$0 < \alpha < 1$ and time-change function $G$ and approximate
+$\EE{R_{i}(n)}$
+\end{abstract}
+
+
+@ {\bf copyright}
+
+
+Copyright {\textcopyright} {\the\year} Bjarki Eldon \newline 
+
+
+$\delta_{0}$PD$(\alpha,0)$ : an implementation of the $\delta_{0}$-Poisson-Dirichlet$(\alpha,0)$-coalescent
+
+
+This document and any source code it contains is distributed under the
+terms of the GNU General Public Licence (version $\ge 3$).  You should
+have received a copy of the licence along with this file (see file
+COPYING).
+
+
+The source codes described in this document are free software: you can
+redistribute it and/or modify it under the terms of the GNU General
+Public License as published by the Free Software Foundation, either
+version 3 of the License, or (at your option) any later version.
+
+This document and the code it contains is distributed in the hope that
+it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+the GNU General Public License for more details.  You should have
+received a copy of the GNU General Public License along with this file
+(see COPYING).  If not, see \url{http://www.gnu.org/licenses/}.
+
+
+{\bf compilation and output}
+
+
+Use {\tt spix} on the script appearing before the preamble (the lines
+starting with  \%\$)
+
+{\tt spix /path/to/sourcefile}
+
+
+or copy the script into {\tt scriptfile}  and use {\tt parallel}:
+
+
+{\tt parallel --gnu -j1 :::: /path/to/scriptfile}
+
+
+compiled on  {\sf \input{innleggop}}  with \\
+{\sf \input{innleggbash}\\
+  \input{innleggcpp}\\
+GSL  \input{innlegggsl}\\
+\input{innleggsed}\\
+\input{innleggawk}\\
+\input{innleggspix}\\
+\input{innlegglatex}\\
+{noweave} and  {notangle} \\
+\input{innleggemacs}
+}
+
+
+
+{\bf intro}
+
+Let \mengi{\xi^{n}} be a $\delta_{0}$-Poisson-Dirichlet$(\alpha,0)$-coalescent with transition rates 
+\begin{equation}
+  \label{eq:1}
+  \begin{split}
+   & 1 +  \frac{2^{1-\kappa}}{\kappa - 1 } <   m_{\infty}  <  1 +  \frac 1{\kappa - 1} \\
+    C_{\kappa} & =  \frac{2}{m_{\infty}^{2}}\svigi{  \one{\kappa = 2}   +  \one{\kappa > 2}  \frac{c_{\kappa}}{ 2^{\kappa}\svigi{\kappa - 2}\svigi{\kappa - 1}}} \\
+  p_{n;k_{1},\ldots, k_{r};s} & =  \frac{\alpha^{r+s-1}\svigi{r+s-1}! }{(n-1)! }\prod_{i=1}^{r}\svigi{k_{i} - 1 - \alpha}_{k_{i} - 1} \\
+ \lambda_{n;k_{1},\ldots, k_{r};s} & =  \frac{C_{\kappa}}{C_{\kappa} + c(1-\alpha) }\one{r=1,k_{1}=1} +  \frac{c}{C_{\kappa} + c(1-\alpha)}  p_{n;k_{1},\ldots, k_{r};s} 
+\end{split}
+\end{equation}
+where $k_{i} \in \mengi{2,3,\ldots, n}$ and $2 \le \sum_{i}k_{i}\le n$
+and $s = n - \sum_{i}k_{i}$ and $\kappa + 2 < c_{\kappa} < \kappa^{2}$
+for $\kappa > 2$ and $0<\alpha < 1$. The
+$\delta_{0}$-Poisson-Dirichlet$(\alpha,0)$-coalescent is an example of
+a $\Xi$-coalescent where simultaneous mergers of a random number of
+ancestral lineages (blocks of the current partition) may occur at such
+times.
+
+
+Here we consider the time-changed continuous-time
+$\delta_{0}$-Poisson-Dirichlet$(\alpha,0)$-coalescent with
+time-change function $G(t) = \int_{0}^{t}1/v(s){\rm d}s $ where   $v(t)
+= \lim_{N\to \infty}N_{\lfloor t/c_{N} \rfloor}/N$  and $N_{r}$ is the
+population size $r$ generations into the past.      Given that
+$\mengi{\xi^{n}}$ reached $m$ blocks at time $\tau$ then the waiting
+time until the next merger is
+\begin{displaymath}
+\prb{T > t : \tau } =  e^{- \lambda_{m} \svigi{G(t+\tau) - G(\tau)} }
+\end{displaymath}
+where $\lambda_{m}$ is the total coalescent rate when $m$ blocks.  
+Then, assuming $G$ is invertible, it holds that
+\begin{displaymath}
+t = G^{-1}\svigi{ G(\tau) -   \frac{1}{\lambda_{m}} \log(1-U) } - \tau
+\end{displaymath}
+using that $U =  1 -  e^{-\lambda_{m} \svigi{G(t+\tau) - G(\tau)} } $
+where $U$ is a standard random uniform on $(0,1)$.
+
+
+Population decline  (reduction in population size forward-in-time) can
+be taken such that   $N_{t} = Ne^{\rho t}$   where $N_{t}$ is the
+population size at time $t$ into the past.  
+ Set $v : s \mapsto e^{\rho s}$ for $s\in (0,\infty)$, and $\rho >
+ 0$ fixed.   Then  $G(t) = \int_{0}^{t}e^{-\rho s}{\rm d}s = \svigi{1
+ - e^{-\rho t}}/\rho$ ($\rho > 0$) and
+ \begin{equation}
+ \label{eq:2} 
+ t =  \frac 1{\rho}\log \svigi{e^{-\rho \tau} -  \frac{\rho}{\lambda_{m}}\log(1-U) } + \tau 
+\end{equation}
+
+
+
+Population growth (increase in population size forward-in-time) can be
+taken such that  $N_{t} = Ne^{-\rho t}$.  Set $v:s \mapsto e^{-\rho s}$
+for $s\in (0,\infty)$, $\rho > 0$ fixed.  Then $G(t) = \svigi{e^{\rho
+t} - 1}/\rho$,  and
+\begin{equation}
+\label{eq:3}
+t =  \frac 1{\rho} \log \svigi{1 - e^{-\rho \tau} \frac {\rho} {\lambda_{m}} \log(1-U)  }
+\end{equation}
+
+
+
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+#include <iostream>
+#include <cstdlib>
+#include <iterator>
+#include <random>
+#include <fstream>
+#include <iomanip>
+#include <vector>
+#include <numeric>
+#include <functional>
+#include <algorithm>
+#include <cmath>
+#include <unordered_map>
+#include <assert.h>
+#include <float.h>
+#include <fenv.h>
+#include <boost/math/special_functions/factorials.hpp>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
+#include <gsl/gsl_math.h>
+#include "deltanull-poissondirichlet-varyingN.h"
+
+
+@  {\bf the random number generators}
+
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+/* a STL random seed engine */
+  std::random_device randomseed;
+  /* Standard mersenne twister  random number engine */
+  std::mt19937_64 rng(randomseed());
+
+gsl_rng * rngtype ;
+static void setup_rng( unsigned long int s )
+{
+        const gsl_rng_type *T ; 
+        gsl_rng_env_setup(); 
+        T = gsl_rng_default ;
+        rngtype = gsl_rng_alloc(T);
+        gsl_rng_set( rngtype,  s) ;
+}
+
+
+
+@  {\bf struct for storing input parameter values}
+
+recall \eqref{eq:1}; {\tt ALPHA} is $\alpha$, {\tt KAPPA} is $\kappa$,
+{\tt CEPS} is $c$, {\tt RHO} is $\rho$
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+struct STIKAR {
+/* input parameters */
+  double ALPHA;
+  double KAPPA;
+  double CEPS;
+  double RHO;
+
+  STIKAR(const double a__, const double k__, const double c__, const double r__) :
+    ALPHA(a__), KAPPA(k__), CEPS(c__), RHO(r__) {}
+} ;
+
+
+@ {\bf struct for storing constants}
+
+
+recall \eqref{eq:1}; {\tt MINF} is $m_{\infty}$, {\tt CKAPPA} is $C_{\kappa}$
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+struct FASTAR {
+  double MINF ;
+  double BKAPPA;
+  double AKAPPA;
+  double CKAPPA;
+} ;
+
+
+
+
+
+@ {\bf descending factorial ${(x)}_{m}$}
+
+the descending factorial  ${(x)}_{m} \equiv x(x-1)\cdots (x-m+1)$
+
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+static double descending_factorial(const double x, const double m)
+{
+/*
+  double p = 1.;
+  for( double i = 0; i < m; ++i){
+    p *= (x - i); }
+  return p ;
+  */
+  return boost::math::falling_factorial(x, static_cast<unsigned int>(m));
+}
+
+
+@  {\bf [[veldi]] $x^{y}$}
+
+
+compute $x^{y}$ checking for under- and overflows
+
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+static double veldi (const double x, const double y )
+  {
+    feclearexcept (FE_ALL_EXCEPT);
+    const double d = pow (x,y);
+
+    return (fetestexcept (FE_UNDERFLOW) ? 0. : (fetestexcept(FE_OVERFLOW) ? FLT_MAX : d));
+  }
+
+@ {\bf [[lambdanks]]}
+
+compute the coalescent rate \eqref{eq:1}
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+static double lambdanks (const double n, const std::vector<unsigned int>& v_k,  const STIKAR& s__s, const FASTAR & s__f )
+{
+  assert(v_k[0] > 1);
+
+  double d {};
+  double k {} ;
+  double f {1} ;
+  const double r = static_cast<double>(v_k.size());
+  
+  std::unordered_map<unsigned int, unsigned int> counts {} ;
+  
+  for( std::size_t i = 0; i < v_k.size(); ++i){
+    f *= descending_factorial( static_cast<double>(v_k[i]) - 1. - s__s.ALPHA,
+                                        static_cast<double>(v_k[i]) -1);
+    /* count occurrence of each  merger size */
+    ++counts[v_k[i]];
+    k += static_cast<double>(v_k[i]) ;
+    d += lgamma(static_cast<double>(v_k[i] + 1)) ; }
+
+  assert( k < n + 1 ); 
+  const double s = n - k;
+  
+  const double p = static_cast<double>(std::accumulate( counts.begin(), counts.end(), 0,
+               [](double a, const auto &x){ return a +  lgamma( (double)x.second + 1);}));
+  
+  const double l = ((v_k.size() < 2 ? (v_k[0] < 3 ? 1. : 0) : 0)*s__f.CKAPPA)
+                   + (s__s.CEPS * veldi(s__s.ALPHA, r+s-1) * tgamma(r+s) * f/tgamma(n) ) ;
+  
+  return (veldi(exp(1), (lgamma( n + 1.) - d)  - lgamma( n - k + 1 ) - p) * l
+                                            / (s__f.CKAPPA + (s__s.CEPS*(1.-s__s.ALPHA))));
+}
+
+
+@ [[generatecdf]] 
+
+generate from the rates \eqref{eq:1} a cumulative mass function for
+sampling mergers; assumes the possible mergers are in files {\tt
+  gg\_<m>\_.txt} where [[m]] is the given number of blocks, one merger
+size combination per line; the combinations can be in any order, the
+rates will be sorted in descending order for an efficient sampling of
+a combination
+
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+static double generatecdf(const unsigned int m,
+                          std::vector<double>& v__cdf,
+			  std::vector<unsigned int>& v__idx,
+			   const STIKAR& s__s,
+			   const FASTAR& s__f)
+{
+  /* the cdf will be stored in v__cdf;   */
+  std::string line {} ;
+
+  /* count the number of possible merger combinations given m blocks,
+                                the number of lines of gg_m_.txt */
+  std::ifstream g("gg_" + std::to_string(m) + "_.txt") ;
+  assert(g.is_open());
+  const unsigned int numberlines = std::count(std::istreambuf_iterator<char>(g),
+                                         std::istreambuf_iterator<char>(), '\n');
+  g.close();
+  std::vector<double> v__lambdam {} ;
+  v__lambdam.clear();
+  v__lambdam.reserve(numberlines);
+  assert( v__lambdam.size()<1);
+  
+  std::vector<unsigned int>  v__mergers {};
+  double totalrate {};
+  /* read all mergers summing from 2 to  m blocks */
+  
+  std::ifstream f("gg_" + std::to_string(m) + "_.txt") ;
+  assert(f.is_open());
+  while( std::getline(f, line) )
+    {
+      v__mergers.clear();
+      assert(v__mergers.size() < 1);
+      std::stringstream ss(line);
+      v__mergers = std::vector<unsigned int>(std::istream_iterator<unsigned int>(ss), {});
+      assert(0 < v__mergers.size());
+      /* compute rates and total rate */
+      v__lambdam.push_back( lambdanks(static_cast<double>(m), v__mergers, s__s, s__f) );
+      totalrate += v__lambdam.back();
+    }
+  f.close();
+  std::vector<unsigned int>().swap(v__mergers) ;
+  assert(0 < v__lambdam.size() ) ;
+  assert(std::numeric_limits<double>::epsilon() < totalrate);
+
+  /* sort into descending order */
+  v__idx.clear();
+  v__idx.resize(v__lambdam.size(),0);
+  std::iota(v__idx.begin(),v__idx.end(),0);
+  std::stable_sort(v__idx.begin(), v__idx.end(),
+      [&v__lambdam](const unsigned int x, const unsigned int y)
+                      {return v__lambdam[x] > v__lambdam[y];});
+
+  /* normalise the rates with totalrate and store the result in v__cdf */ 
+  v__cdf.clear();
+  v__cdf.resize(v__lambdam.size());
+  std::transform(v__lambdam.begin(), v__lambdam.end(), v__cdf.begin(),
+                     [&totalrate](const double x){return x/totalrate;});
+
+  assert(0 < v__cdf.size());
+  v__lambdam.clear();
+  v__lambdam.resize(0);
+  std::vector<double>().swap(v__lambdam);
+  /* need totalrate for given  m blocks  for sampling time */
+  return totalrate;
+}
+
+
+
+
+@ [[generate_all_cdfs]]
+
+compute all  rates for all numbers of blocks from 2 to sample size
+
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+static void generate_all_cdfs (std::vector<std::vector<double>>& a__cdfs,
+                               std::vector<std::vector<unsigned int>>& a__idx,
+			       std::vector<double>& v__lambdam,
+			        const STIKAR& s__s,
+				const FASTAR &s__f)
+{
+  a__cdfs.push_back(std::vector<double>());
+  a__cdfs.push_back(std::vector<double>());
+  a__idx.push_back(std::vector<unsigned int>());
+  a__idx.push_back(std::vector<unsigned int>());
+  std::vector<double> tmpcdf {};
+  std::vector<unsigned int> tmpidx {};
+  for(unsigned int m = 2; m <= SAMPLE_SIZE; ++m)
+    {
+      v__lambdam[m] = generatecdf(m, tmpcdf, tmpidx, s__s, s__f);
+      a__cdfs.push_back(tmpcdf);
+      a__idx.push_back(tmpidx);
+    }
+
+  assert(a__cdfs.size() == SAMPLE_SIZE + 1);
+  assert(a__idx.size() == SAMPLE_SIZE + 1);
+  
+  tmpcdf.clear();
+  tmpcdf.resize(0);
+  std::vector<double>().swap(tmpcdf);
+  tmpidx.clear();
+  tmpidx.resize(0);
+  std::vector<unsigned int>().swap(tmpidx);
+}
+
+
+
+@ [[sample_merger]]
+
+
+sample a merger size combination 
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+static unsigned int sample_merger(const std::vector<double>& v__f,
+                          const std::vector<unsigned int>& v__sidx)
+{
+  unsigned int j {};
+  assert( v__f[v__sidx[j]] <= 1.);
+  double f = v__f[v__sidx[j]];
+  const double u = gsl_rng_uniform_pos(rngtype);
+  /* add the normalised combination rates  in descending order */
+  while( f < u ){++j; f += v__f[v__sidx[j]]; };
+  /* return the line number  corresponding to sampled combination */
+  return v__sidx[j] + 1;
+}
+
+
+@ [[readmergersizes]]
+
+
+read the sampled combination of merger sizes 
+
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+static void readmergersizes(const unsigned int linenumber,
+                            const unsigned int m,
+			    std::vector<unsigned int>& v__mergers)
+{
+  /* m is the number of blocks */
+  /* linenumber corresponds to the sampled combination */
+  
+  std::ifstream f("gg_" + std::to_string(m) + "_.txt") ;
+  std::string line {} ;
+
+  v__mergers.clear();
+  assert(v__mergers.size() < 1);
+  
+  for( unsigned int i = 0; std::getline(f, line) && i < linenumber; ++i ){
+    if(i >= linenumber-1 ){
+      
+      std::stringstream ss(line) ;
+      v__mergers = std::vector<unsigned int>( std::istream_iterator<unsigned int>(ss), {} );
+    } }
+    
+/* v__mergers stores the merger sizes of the sampled combination */
+  assert(v__mergers.size() > 0) ;
+  assert(v__mergers[0] > 1);
+  assert(v__mergers.back() > 1);
+  f.close();
+}
+
+
+@ [[updatetree]]
+
+update corrent configuration of block sizes by merging blocks
+according to the sampled combination
+
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+static void  updatetree (std::vector<unsigned int> & tre,
+                        const std::vector<unsigned int>& mergersizes)
+{
+  /* tre is current block sizes */
+  /* mergersizes is sampled merger size(s) */
+  assert( mergersizes.size() > 0) ;
+
+  std::vector< unsigned int> newblocks {};
+  newblocks.clear() ;
+  newblocks.reserve(mergersizes.size());
+  std::shuffle( tre.begin(), tre.end(), rng) ;
+  std::size_t s = tre.size();
+  for(const auto &k : mergersizes)
+    {
+      assert( k > 1);
+      assert( k <= s) ;
+      s -= k ;
+      /* record the size of the merging blocks */
+      newblocks.push_back( std::accumulate( tre.rbegin(), tre.rbegin() + k, 0));
+      /* remove the blocks that merged */
+      tre.resize(s);
+    }
+  assert (newblocks.size() == mergersizes.size()) ;
+  assert (static_cast<unsigned int>(std::accumulate( newblocks.begin(), newblocks.end(), 0))
+                                                                             <= SAMPLE_SIZE);
+  
+  tre.insert (tre.end(), newblocks.begin(), newblocks.end());
+
+  assert (static_cast<unsigned int>(std::accumulate( tre.begin(), tre.end(), 0))
+                                                                 == SAMPLE_SIZE);
+  newblocks.clear();
+  newblocks.resize(0);
+  std::vector<unsigned int>().swap(newblocks);
+}
+
+
+
+@  [[newtime]]
+
+
+sample new length of  time interval; recall \eqref{eq:2} and \eqref{eq:3} for the time-changing
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+double newtime (const double lambdab,  const double oldtime, const STIKAR& s__s)
+{
+
+  /* RHO > 0 then population growth forward in time with parameter |RHO| */
+  auto gtimi = [&s__s](const double o, const double l)
+  {
+       assert(std::numeric_limits<double>::epsilon() < s__s.RHO);
+     std::feclearexcept(FE_ALL_EXCEPT);
+     const double e = exp(- s__s.RHO * o);
+     
+     return(std::fetestexcept(FE_UNDERFLOW) ? 0.
+                  : log1p(- e * s__s.RHO * log(gsl_rng_uniform_pos(rngtype)) / l)
+		                                                      / s__s.RHO);
+  } ;
+
+
+  /* RHO < 0 then population decline forward in time with parameter |RHO| */
+  auto dtimi = [&s__s](const double o, const double l)
+  {
+      assert(s__s.RHO < 0. ) ;
+     std::feclearexcept(FE_ALL_EXCEPT);
+     const double e = exp(- fabs(s__s.RHO) * o );
+
+     return(o + log( (fetestexcept(FE_UNDERFLOW) ? 0. :e)
+            - ( fabs(s__s.RHO) * log(gsl_rng_uniform_pos(rngtype))/l)) / fabs(s__s.RHO));
+  };
+  
+  return (fabs(s__s.RHO) > std::numeric_limits<double>::epsilon() ?
+         (s__s.RHO < 0. ? dtimi(oldtime, lambdab) : gtimi(oldtime,lambdab)) :
+	                     gsl_ran_exponential (rngtype, 1./lambdab)) ;
+}
+
+
+@ [[genealogy]]
+
+
+sample one `tree'   and record branch lengths 
+
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+void genealogy (std::vector<double>& v__r__,
+               const std::vector<double>& v__l__,
+	       const std::vector<std::vector<double>>& a__cdfs,
+	       const std::vector<std::vector<unsigned int>>& a__sidxs,
+	       const STIKAR& s__s)
+{
+  /* n is sample size */
+  assert(SAMPLE_SIZE > 1) ;
+  std::vector<unsigned int> tre (SAMPLE_SIZE, 1) ;
+  std::vector<double> b__ (SAMPLE_SIZE) ;
+  std::vector<double> r__ (SAMPLE_SIZE) ;
+  std::vector<double> f__ {};
+  std::vector<unsigned int> m__ {} ;
+  auto update_branch_lengths = [&b__,&tre](const double s)
+  { /* s is the sampled interval time*/
+    for(const auto &z: tre)
+      {
+	b__[0] += s;
+	b__[z] += s;}
+  };
+
+  double t {};
+  double trate {} ;
+  double tau {} ;
+  unsigned int lina {} ;
+  while(tre.size() > 1)
+    {
+      /* sample interval time with current number of blocks */
+      t = newtime(v__l__[tre.size()], tau, s__s);
+      assert(0. <= t);
+      tau += t;
+      /* update current branch lengths */
+      update_branch_lengths(t);
+      /* sample mergers */
+      lina = sample_merger(a__cdfs[tre.size()], a__sidxs[tre.size()]);
+      /* read in merger sizes corresponding to line number lina */
+      readmergersizes(lina, tre.size(), m__);
+      /* merge blocks and update tree */
+      updatetree(tre, m__);
+    }
+  /* update relative branch lengths */
+  assert(std::numeric_limits<double>::epsilon() <  b__[0]  );
+  const double s = b__[0];
+  std::transform(b__.begin(), b__.end(), v__r__.begin(), v__r__.begin(),
+                  [&s](const auto &x, const auto &y){return y + (x/s);});
+}
+
+
+@ [[approximate]]
+
+
+go ahead -- approximate $\EE{R_{i}(n)}$ 
+
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+void approximate (const double c__alpha, const double c__kappa, const double c__ceps, const double c__rho)
+{
+
+  STIKAR s_s (c__alpha, c__kappa, c__ceps, c__rho);
+  FASTAR s_f = {.MINF = (2. + (1 + pow(2., 1-s_s.KAPPA)/(s_s.KAPPA - 1)))/2.,
+    .BKAPPA = pow(2,s_s.KAPPA)*(s_s.KAPPA - 2)*(s_s.KAPPA - 1),
+    .AKAPPA = ((s_s.KAPPA+2) + pow(s_s.KAPPA,2))/2.,
+    .CKAPPA = (s_s.KAPPA > 2 ? s_f.AKAPPA / s_f.BKAPPA : 1.) * 2./pow(s_f.MINF,2.)} ;
+  
+
+  std::vector<double> ri__ (SAMPLE_SIZE);
+  std::vector<double> v__l (SAMPLE_SIZE);
+  int r = static_cast<int>(EXPERIMENTS) +1;
+
+  std::vector< std::vector<double>> a__cdfs__ {};
+  std::vector<std::vector<unsigned int>> a__idx__ {};
+
+  /* generate cdfs for block numbers 2 to sample size; sort indexes */
+  generate_all_cdfs(a__cdfs__, a__idx__, v__l, s_s, s_f);
+
+  /* generate EXPERIMENTS number of trees and read branch lengths */
+  while(--r > 0)
+    { genealogy(ri__, v__l,  a__cdfs__, a__idx__ , s_s); }
+  for(unsigned int j = 1; j < SAMPLE_SIZE; ++j)
+    {std::cout << (std::numeric_limits<double>::epsilon() < ri__[j] ?
+    (log(ri__[j]/(EXPERIMENTS)) - log1p(-ri__[j]/(EXPERIMENTS))) : 9999) << '\n';}
+
+  v__l.clear();
+  v__l.resize(0);
+  std::vector<double>().swap(v__l);
+  ri__.clear();
+  ri__.resize(0);
+  std::vector<double>().swap(ri__);
+
+  a__cdfs__.clear();
+  a__cdfs__.resize(0);
+  std::vector< std::vector<double>>().swap(a__cdfs__);
+  a__idx__.clear();
+  a__cdfs__.resize(0);
+  std::vector<std::vector<unsigned int>>().swap(a__idx__);
+}
+
+
+
+
+@ {\bf [[main]]} 
+
+the [[main]] function
+
+<<deltanull-poissondirichlet-varyingN.c>>=
+int main (int argc, const char * argv[])
+{
+
+setup_rng(static_cast<unsigned int>(atoi(argv[argc-1])));
+
+ /* ALPHA - KAPPA - CEPS - RHO */
+ /* check range */
+  assert(atof(argv[1]) > std::numeric_limits<double>::epsilon());
+  assert(atof(argv[1]) < 1.);
+  assert(2. <= atof(argv[2]));
+  assert(0. <=  atof(argv[3]) );
+ 
+  approximate(atof(argv[1]),  atof(argv[2]), atof(argv[3]), atof(argv[4]));  
+  gsl_rng_free(rngtype);
+
+  return GSL_SUCCESS;
+}
+
+
+@  {\bf conclusion and bibliography}
+
+We estimate $\EE{R_{i}(n)}$ for the
+$\delta_{0}$-Poisson-Dirichlet$(\alpha,0)$-coalescent. 
+
+
+\begin{thebibliography}{99}
+
+
+\bibitem[CDE26]{CDE26}
+Jonathan~A Chetwynd-Diggle and Bjarki Eldon.
+\newblock Beta-coalescents when sample size is large, 2026.
+\newblock URL \url{https://arxiv.org/abs/2601.08538}.
+\newblock arXiv
+\newblock \doi{https://doi.org/10.48550/arxiv.2601.08538}
+
+
+
+\bibitem[E2026]{E2026}
+Bjarki Eldon.
+\newblock Gene genealogies in haploid populations evolving according to
+  sweepstakes reproduction, 2026{\natexlab{a}}.
+\newblock URL \url{https://arxiv.org/abs/2601.09537}.
+\newblock arXiv
+\newblock \doi{https://doi.org/10.48550/arxiv.2601.09537}
+
+
+
+\bibitem[DK99]{DK99}
+P~Donnelly and T~G Kurtz.
+\newblock Particle representations for measure-valued population models.
+\newblock {\em Ann Probab}, 27:166--205, 1999.
+\\
+\url{https://dx.doi.org/10.1214/aop/1022677258}
+
+\bibitem[KL94]{knuth1994cweb}
+Donald~Ervin Knuth and Silvio Levy.
+\newblock {\em The CWEB system of structured documentation: version 3.0}.
+\newblock Addison-Wesley Longman Publishing Co., Inc., Reading, Massachusetts,
+  1994.
+
+
+\bibitem[KR88]{kernighan1988c}
+Brian~W Kernighan and Dennis~M Ritchie.
+\newblock The {C} programming language, 1988.
+
+
+
+\bibitem[Pit99]{P99}
+J~Pitman.
+\newblock Coalescents with multiple collisions.
+\newblock {\em Ann Probab}, 27:1870--1902, 1999.
+\\
+\url{https://dx.doi.org/10.1214/aop/1022874819}
+
+
+\bibitem[Sag99]{S99}
+S~Sagitov.
+\newblock The general coalescent with asynchronous mergers of ancestral lines.
+\newblock {\em J Appl Probab}, 36:1116--1125, 1999.
+\\
+\url{https://doi.org/10.1239/jap/1032374759}
+
+
+\bibitem[Sch03]{schweinsberg03}
+J~Schweinsberg.
+\newblock Coalescent processes obtained from supercritical {G}alton-{W}atson
+  processes.
+\newblock {\em Stoch Proc Appl}, 106:107--139, 2003.
+\\
+\url{https://doi.org/10.1016/S0304-4149(03)00028-0}
+
+
+\bibitem[S00]{S00}
+J~Schweinsberg.
+\newblock Coalescents with simultaneous multiple collisions.
+\newblock {\em Electronic Journal of Probability}, 5:1--50, 2000.
+\\
+\url{https://dx.doi.org/10.1214/EJP.v5-68}
+
+
+
+\bibitem[Tan11]{tange11:_gnu_paral}
+O~Tange.
+\newblock {GNU} parallel -- the command-line power tool.
+\newblock The USENIX Magazine, 2011.
+\end{thebibliography}
